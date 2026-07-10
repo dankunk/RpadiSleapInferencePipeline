@@ -1,0 +1,23 @@
+# This is the snakemake config yaml file.
+# Replace variables as needed
+
+# directory containing all of the video files to be processed
+#video_dir: "path/to/video_directory"
+# testing dir
+video_dir: "D:/snakemake_test_input/"
+# final dir
+
+
+# where the inference results will be saved
+#output_dir: "path/to/output_directory"
+# testing dir
+output_dir: "D:/snakemake_test_output/"
+# final dir
+
+
+# path to the model files (e.g., .pt) to be used for inference
+#model_path: "path/to/model_files"
+# testing dir
+# final dir
+# makes sense to add our model to our repo just for reproducibility purposes, may not fit but lets try.
+model_dir: "./tensorRT_model/topdown_260709"

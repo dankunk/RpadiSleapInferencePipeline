@@ -1,0 +1,72 @@
+### snakefile for running the rpadi video sleap inference pipeline
+
+
+# import deps
+# also utilizing sleap versions 1.6.2 via uv/powershell
+import os
+
+# import the config file
+configfile: "config.yaml"
+shell.executable("powershell.exe")
+
+# extract paths from config
+VIDEO_DIR = config["video_dir"]
+OUTPUT_DIR = config["output_dir"]
+MODEL_DIR = config["model_dir"]
+
+# we can scan for all videos while also mapping the structure of the input directory
+# this will capture the condition, treatment, and replicate info already in the directory structure
+CONDITIONS, REPLICATES, VIDEO_IDS = glob_wildcards(f"{VIDEO_DIR}/{{condition}}/{{replicate}}/Camera0/{{video_id}}.mp4")
+
+# debug wildcards
+# print(f"\n--- DEBUG INFO ---")
+# print(f"searching exactly in: {VIDEO_DIR}")
+# print(f"number of videos found: {len(VIDEO_IDS)}")
+# print(f"------------------\n")
+
+
+# set the rule all to specify the final output files we want to generate
+rule all:
+    input:
+        # we can use zip to make sure snakemake can pair the exact wildcards that were found together on disk
+        expand(
+            f"{OUTPUT_DIR}/{{condition}}/{{replicate}}/{{video_id}}_sleap.h5",
+            zip,
+            condition=CONDITIONS,
+            replicate=REPLICATES,
+            video_id=VIDEO_IDS
+        )
+
+
+# we can set a rule that does the first sleap inference step and outputs the results to a directory
+rule predict_chunk:
+    input:
+        video=f"{VIDEO_DIR}/{{condition}}/{{replicate}}/Camera0/{{video_id}}.mp4",
+    output:
+        # save initial sleap prediction file
+        slp = f"{OUTPUT_DIR}/{{condition}}/{{replicate}}/{{video_id}}_sleap.slp"
+    log:
+        # log text file for catching output (FPS) or errors
+        txt=f"{OUTPUT_DIR}/{{condition}}/{{replicate}}/{{video_id}}_predict.log"
+    params:
+        model=MODEL_DIR
+    shell:
+        """
+        # for testing purposes, add --n-frames 5000 to limit to a smaller num of frames
+        sleap-nn predict {params.model} {input.video} -o {output.slp} --runtime tensorrt --batch-size 32 --n-frames 5000 > {log.txt} 2>&1
+        """
+
+# after we have our predictions, we can convert to h5 format to save space and make it easier to work with downstream
+rule convert_to_h5:
+    input:
+        slp=f"{OUTPUT_DIR}/{{condition}}/{{replicate}}/{{video_id}}_sleap.slp"
+    output:
+        # The final flattened analysis array
+        h5=f"{OUTPUT_DIR}/{{condition}}/{{replicate}}/{{video_id}}_sleap.h5"
+    shell:
+        """
+        # convert the SLEAP format into a smaller hdf5 format
+        sleap export {input.slp} -o {output.h5} --h5-dim-order standard
+        """
+
+# we can also add a rule to clean up the intermediate files if we want to save space
