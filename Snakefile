@@ -57,16 +57,37 @@ rule predict_chunk:
         """
 
 # after we have our predictions, we can convert to h5 format to save space and make it easier to work with downstream
-rule convert_to_h5:
+# h5 files with no tracking overwrite individuals, CSV unnafected.
+# rule convert_to_h5:
+#     input:
+#         slp=f"{OUTPUT_DIR}/{{condition}}/{{replicate}}/{{video_id}}_sleap.slp"
+#     output:
+#         # The final flattened analysis array
+#         h5=f"{OUTPUT_DIR}/{{condition}}/{{replicate}}/{{video_id}}_sleap.h5",
+#         csv=f"{OUTPUT_DIR}/{{condition}}/{{replicate}}/{{video_id}}_sleap.csv"
+#     shell:
+#         """
+#         # convert the SLEAP format into a smaller hdf5 format
+#         sleap export {input.slp} -o {output.h5} --h5-dim-order standard
+#         # small csv export for quick debugging
+#         sleap export {input.slp} -o {output.csv}
+#         """
+
+# instead of converting to h5 and having to track. we can just treat the csv as temp and convert to h5
+# here we use pandas. maybe there are faster functions in different libs? files should fit in memory though so this should be sufficient
+rule convert_to_pandas_h5:
     input:
         slp=f"{OUTPUT_DIR}/{{condition}}/{{replicate}}/{{video_id}}_sleap.slp"
     output:
-        # The final flattened analysis array
-        h5=f"{OUTPUT_DIR}/{{condition}}/{{replicate}}/{{video_id}}_sleap.h5"
+        h5=f"{OUTPUT_DIR}/{{condition}}/{{replicate}}/{{video_id}}_sleap.h5",
+        csv=f"{OUTPUT_DIR}/{{condition}}/{{replicate}}/{{video_id}}_sleap.csv"
     shell:
         """
-        # convert the SLEAP format into a smaller hdf5 format
-        sleap export {input.slp} -o {output.h5} --h5-dim-order standard
+        # first export to csv
+        sleap export {input.slp} -o {output.csv}
+        
+        # convert to h5 with pandas, adjust paramters as needed for compression and speed
+        uv run --with pandas --with tables python -c "import pandas as pd; df = pd.read_csv('{output.csv}'); df.to_hdf('{output.h5}', key='sleap_data', mode='w', complevel=9)"
         """
 
-# we can also add a rule to clean up the intermediate files if we want to save space
+# we can also add rules to clean up the intermediate files if we want to save space
