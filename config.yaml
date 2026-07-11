@@ -6,7 +6,7 @@
 # testing dir
 #video_dir: "D:/snakemake_test_input/"
 # final dir
-video_dir: "D/video_data_backups/experimental_videos/reps/"
+video_dir: "D:/video_data_backups/experimental_videos/reps/"
 
 
 # where the inference results will be saved
