@@ -1,0 +1,42 @@
+{
+  "anchor_part": "ab",
+  "backbone": "centroid:unet;centered_instance:unet",
+  "checkpoint_path": "centroid:models\\260709_160246.centroid.n=614\\best.ckpt;centered_instance:models\\260709_162342.centered_instance.n=614\\best.ckpt",
+  "class_names": null,
+  "crop_size": [
+    160,
+    160
+  ],
+  "edge_inds": [],
+  "export_format": "tensorrt",
+  "export_timestamp": "2026-07-09T20:11:49.317615",
+  "input_channels": 1,
+  "input_dtype": "uint8",
+  "input_scale": 0.5,
+  "max_batch_size": 32,
+  "max_instances": 6,
+  "max_peaks_per_node": null,
+  "model_name": "260709_160246.centroid.n=614+260709_162342.centered_instance.n=614",
+  "model_type": "topdown",
+  "n_classes": null,
+  "n_edges": 0,
+  "n_nodes": 9,
+  "node_names": [
+    "ab",
+    "hd",
+    "cd",
+    "tarL1",
+    "tarL2",
+    "tarL3",
+    "tarR1",
+    "tarR2",
+    "tarR3"
+  ],
+  "normalization": "0_to_1",
+  "output_stride": 4,
+  "peak_threshold": 0.2,
+  "precision": "fp16",
+  "sleap_nn_version": "0.1.3",
+  "training_config_embedded": true,
+  "training_config_hash": "centroid:86a81f3a9eabf832d5a9c98c2a76557cfe6f2384b3318c6835a3fdefac3b5a2a;centered_instance:1aae2d3136cf9cf3796b8f06ba5646b6f241f5cad492d36fc22fbe54d84765ff"
+}
