@@ -1,3 +1,4 @@
 # hide log and metadata files
 /.snakemake/log/*
 /.snakemake/metadata/*
+/.snakemake/incomplete/*
