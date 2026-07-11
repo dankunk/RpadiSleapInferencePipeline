@@ -48,6 +48,8 @@ rule predict_chunk:
     log:
         # log text file for catching output (FPS) or errors
         txt=f"{OUTPUT_DIR}/{{condition}}/{{replicate}}/{{video_id}}_predict.log"
+    #benchmark:
+    #    f"{OUTPUT_DIR}/{{condition}}/{{replicate}}/{{video_id}}_predict.benchmark.txt"
     params:
         model=MODEL_DIR
     shell:
@@ -81,7 +83,9 @@ rule convert_to_pandas_h5:
     output:
         h5=f"{OUTPUT_DIR}/{{condition}}/{{replicate}}/{{video_id}}_sleap.h5",
         # add temp around csv after testing, we can also add a rule to clean up the intermediate files if we want to save space
-        csv=f"{OUTPUT_DIR}/{{condition}}/{{replicate}}/{{video_id}}_sleap.csv"
+        csv=temp(f"{OUTPUT_DIR}/{{condition}}/{{replicate}}/{{video_id}}_sleap.csv")
+    #benchmark:
+    #    f"{OUTPUT_DIR}/{{condition}}/{{replicate}}/{{video_id}}_convert.benchmark.txt"
     shell:
         """
         # first export to csv

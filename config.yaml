@@ -4,16 +4,17 @@
 # directory containing all of the video files to be processed
 #video_dir: "path/to/video_directory"
 # testing dir
-video_dir: "D:/snakemake_test_input/"
+#video_dir: "D:/snakemake_test_input/"
 # final dir
+video_dir: "D/video_data_backups/experimental_videos/reps/"
 
 
 # where the inference results will be saved
 #output_dir: "path/to/output_directory"
 # testing dir
-output_dir: "D:/snakemake_test_output/"
+#output_dir: "D:/snakemake_test_output/"
 # final dir
-
+output_dir: "D:/RpadiSleapInferencePipeline_Output/"
 
 # path to the model files (e.g., .pt) to be used for inference
 #model_path: "path/to/model_files"
