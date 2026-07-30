@@ -148,4 +148,110 @@ Once in the directory with the correct config, the workflow can be ran by the co
 ```powershell
 snakemake --cores 4
 ```
-We have optimized our models to be able to fit 4 inference jobs on our machine at once. Maybe we can do 5 at once but lets not get greedy, 4 is already using ~80% of our GPU. Thus we keep the number of cores at 4. 
+We have optimized our models to be able to fit 4 inference jobs on our machine at once. Maybe we can do 5 at once but lets not get greedy, 4 is already using ~80% of our GPU. Thus we keep the number of cores at 4.
+
+## Graceful restarts after crashes
+When working on our lab computer, often times the sessions can disconnect for reasons we cannot diagnose (network and user policies from IT...).
+
+This means that our snakemake processes can sometimes be killed and not shut down gracefully. 
+
+Thankfully, we can do a few things to make sure that nothing is impacted. 
+
+First, because snakemake doesn't know it's not still running it put a lock on our project so that we cannot accidentally start multiple processes at once. 
+
+So we need to remove the lock, we can be sure that nothing is running by checking task manager, CPU/GPU usage, etc.
+
+```powershell
+snakemake --unlock
+```
+
+Now we can utilize snakemakes own functionality to find any jobs that never got the message of being succesfully finished. We can use --rerun-incomplete to allow snakemake to find anything that never finished and -n for dry run.
+
+```powershell
+snakemake --cores 4 --rerun-incomplete -n
+```
+
+Because the predict_chunk rules are about an hour to complete, these are the files most likely to be corrupted due to crashes. The good thing is that these only write to disc after being produced so if they aren't finished during a crash, snakemake will notice the .slp files are missing for that input file and re-run that particular job. 
+
+However, snakemake will also give you a log of files it knows didn't get completed. These can be found in the `.snakemake/incomplete/` directory. They are in base 64 url-safe names. These can be decoded online at various websites.
+
+When snakemake starts a job it will make one of this url-safe file names. When snakemake finished that job it will be deleted. Any predict jobs that snakemake re-runs, since it notices no .slp output, with the same file name will overwrite the current incomplete url and then be deleted once it finishes.
+
+Things that form temp files on disc before the job is finished will be flagged by snakemake and using the `--rerun-incomplete` functionality already built into snakemake should be utilized 
+
+```powershell
+RDovUnBhZGlTbGVhcEluZmVyZW5jZVBpcGVsaW5lX091dHB1dC8vREQtRGlldC9hZ2VzeW5jXzEwLTIzLTI1LXJlcDItREQvRERfZGlldF9hZ2VzeW5jXzEwLTIzLTI1LXJlcDJfQ2FtZXJhMF8yMDI1MTAzMF8xMzU4NTFfNTQwMDAwMC01NjE1OTk5X3NsZWFwLnNscA==
+```
+Further, if we want to really be sure all incomplete files are gone we must parse the logs for what started around the time of the crash (~1.5-2 hours to be safe) but never got logged as finished.
+
+Using an LLM with a big context window and feeding in the full log is very helpful.
+
+## Running jobs piecemeal
+
+We can also run snakemake with the flag --until to hammer our all the gpu jobs so we can finish the convert to h5 jobs with more cores after the time intensive and GPU intensive stuff finishes.
+
+```powershell
+snakemake --cores 4 --until predict_chunk -n
+```
+The above code will run all prediction jobs up until the conversion jobs.
+
+
+Once that finishes we can then run snakemake with a few more cores to be sure that the H5 conversion jobs are finishing fast!
+
+```powershell
+# we can first run in dryrun mode to check for incompletion; keeping 4 cores just in case gpu bound jobs are present
+snakemake --cores 4 --rerun-incomplete -n
+
+# finally we can run all the other jobs (h5 conversion): 20 cores to start, monitor resources accordingly
+snakemake --cores 10 --rerun-incomplete
+
+```
+
+
+## Utils and Notes
+
+Sometimes our dryrun plans are super long. We can append the output to a file for easier viewing or feeding into an LLM.
+
+```powershell
+snakemake -n > dryrun_plan_7-24-2026.txt 2>&1
+```
+
+### Compute Resources
+
+```
+CPU
+
+	Intel(R) Xeon(R) w5-2545
+
+	Base speed:	3.50 GHz
+	Sockets:	1
+	Cores:	12
+	Logical processors:	24
+	Virtualization:	Enabled
+	L1 cache:	960 KB
+	L2 cache:	24.0 MB
+	L3 cache:	30.0 MB
+
+Memory
+
+	128 GB
+
+	Speed:	4800 MT/s
+	Slots used:	4 of 8
+	Form factor:	DIMM
+	Hardware reserved:	775 MB
+
+GPU 0
+
+	NVIDIA RTX 4000 Ada Generation
+
+	Driver version:	32.0.15.9595
+	Driver date:	3/15/2026
+	DirectX version:	12 (FL 12.1)
+	Physical location:	PCI bus 85, device 0, function 0
+
+	Utilization	0%
+	Dedicated GPU memory	0.6/20.0 GB
+	Shared GPU memory	0.1/63.6 GB
+	GPU Memory	0.7/83.6 GB
+```
