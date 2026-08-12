@@ -5,7 +5,7 @@ This repository contains the scripts used to inference over the *R. padi* video 
 
 
 ## Tools and Dependencies
-Currently, we are utilizing sleap and snakemake as installed via the uv package manager. 
+Currently, we are utilizing sleap and snakemake as installed via the uv package manager. These are installed as uv tools rather than packages in a venv. 
 
 ```powershell
 PS C:\Users\nalamlab\RpadiSleapInferencePipeline> uv tool list
